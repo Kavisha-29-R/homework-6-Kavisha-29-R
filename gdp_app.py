@@ -116,20 +116,17 @@ data["Region"] = data["Country"].map(region_map).fillna("Other")
 plot_df = data[["Country", "Region", source]].rename(columns={source: "GDP"})
 plot_df.dropna(subset=["GDP"], inplace=True)
 
-# --- Limit to Top N + "Other" ---
+# --- Limit to Top N + Other ---
 TOP_N = 10
-
 top_countries = (
-    plot_df
-    .sort_values(["Region", "GDP"], ascending=[True, False])
+    plot_df.sort_values(["Region", "GDP"], ascending=[True, False])
     .groupby("Region")
     .head(TOP_N)
     .reset_index(drop=True)
 )
 
 others = (
-    plot_df
-    .merge(top_countries[["Country"]], on="Country", how="left", indicator=True)
+    plot_df.merge(top_countries[["Country"]], on="Country", how="left", indicator=True)
     .query("_merge == 'left_only'")
     .groupby("Region", as_index=False)
     .agg(Country=("Country", lambda s: "Other (rest)"), GDP=("GDP", "sum"))
@@ -138,38 +135,34 @@ others = (
 plot_df = pd.concat([top_countries, others], ignore_index=True)
 plot_df = plot_df.sort_values(["Region", "GDP"], ascending=[True, False])
 
-# --- Pivot and reshape for stacking ---
-pivot = plot_df.pivot_table(
-    index="Region",
-    columns="Country",
-    values="GDP",
-    aggfunc="sum",
-    fill_value=0
-)
-long_df = pivot.reset_index().melt(id_vars="Region", var_name="Country", value_name="GDP")
+# --- Pivot for stacked view ---
+pivot = plot_df.pivot_table(index="Region", columns="Country", values="GDP", aggfunc="sum", fill_value=0)
 
-# --- Generate a color scale ---
-n_colors = long_df["Country"].nunique()
+# --- Generate Colors ---
+countries = pivot.columns.tolist()
+n_colors = len(countries)
 color_scale = pc.sample_colorscale("Rainbow", [i / (n_colors - 1) for i in range(n_colors)])
 
-# --- Plot ---
-fig = px.bar(
-    long_df,
-    x="Region",
-    y="GDP",
-    color="Country",
-    title=f"GDP by Country (Stacked by Region) - {source}",
-    labels={"GDP": "GDP (US$ million)", "Region": "Region"},
-    barmode="stack",
-    color_discrete_sequence=color_scale
-)
+# --- Create Stacked Bar with graph_objects ---
+fig = go.Figure()
+
+for i, country in enumerate(countries):
+    fig.add_trace(go.Bar(
+        x=pivot.index,
+        y=pivot[country],
+        name=country,
+        marker=dict(color=color_scale[i]),
+        hovertemplate=f"{country}<br>GDP: %{{y:,.0f}} million USD<extra></extra>"
+    ))
 
 fig.update_layout(
+    barmode="stack",
+    title=f"GDP by Country (Stacked by Region) - {source}",
     xaxis_title="Region",
     yaxis_title="GDP (US$ million)",
     legend_title="Country",
     template="plotly_white",
-    height=650,
+    height=700,
     hovermode="x unified",
 )
 
