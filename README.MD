@@ -27,8 +27,8 @@ Supports both metric (meters, kilograms) and imperial (feet, pounds) units.
 - Responsive, clean UI.
 
 ### Files
-- `bmi_app.py` — Python source code for the Dash app.  
-- `bmi_app.gif` — 5–10 second GIF demonstration of the app in use.
+- `dash_bmi_app.py` — Python source code for the Dash app.  
+- `BMI_Calculator_app.gif` — 5–10 second GIF demonstration of the app in use.
 
 ---
 
