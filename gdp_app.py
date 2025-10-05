@@ -112,58 +112,62 @@ region_map = {
 
 data["Region"] = data["Country"].map(region_map).fillna("Other")
 
-# --- Filter by source ---
-plot_df = data[["Country", "Region", source]].rename(columns={source: "GDP"})
-plot_df.dropna(subset=["GDP"], inplace=True)
 
-# --- Limit to Top N + Other ---
-TOP_N = 10
-top_countries = (
-    plot_df.sort_values(["Region", "GDP"], ascending=[True, False])
-    .groupby("Region")
-    .head(TOP_N)
-    .reset_index(drop=True)
-)
+# --- Function to prepare plot data ---
+def prepare_plot_df(source_col):
+    plot_df = data[["Country", "Region", source_col]].rename(columns={source_col: "GDP"})
+    plot_df.dropna(subset=["GDP"], inplace=True)
 
-others = (
-    plot_df.merge(top_countries[["Country"]], on="Country", how="left", indicator=True)
-    .query("_merge == 'left_only'")
-    .groupby("Region", as_index=False)
-    .agg(Country=("Country", lambda s: "Other (rest)"), GDP=("GDP", "sum"))
-)
+    # Top N per region + "Other" bucket
+    TOP_N = 10
+    top_countries = (
+        plot_df.sort_values(["Region", "GDP"], ascending=[True, False])
+        .groupby("Region")
+        .head(TOP_N)
+        .reset_index(drop=True)
+    )
 
-plot_df = pd.concat([top_countries, others], ignore_index=True)
-plot_df = plot_df.sort_values(["Region", "GDP"], ascending=[True, False])
+    others = (
+        plot_df.merge(top_countries[["Country"]], on="Country", how="left", indicator=True)
+        .query("_merge == 'left_only'")
+        .groupby("Region", as_index=False)
+        .agg(Country=("Country", lambda s: "Other (rest)"), GDP=("GDP", "sum"))
+    )
 
-# --- Pivot for stacked view ---
-pivot = plot_df.pivot_table(index="Region", columns="Country", values="GDP", aggfunc="sum", fill_value=0)
+    combined_df = pd.concat([top_countries, others], ignore_index=True)
+    combined_df = combined_df.sort_values(["Region", "GDP"], ascending=[True, False])
+    return combined_df
 
-# --- Generate Colors ---
-countries = pivot.columns.tolist()
-n_colors = len(countries)
-color_scale = pc.sample_colorscale("Rainbow", [i / (n_colors - 1) for i in range(n_colors)])
+# --- Build Stacked Bar Figure ---
+def build_stacked_bar(df):
+    pivot = df.pivot_table(index="Region", columns="Country", values="GDP", aggfunc="sum", fill_value=0)
+    countries = pivot.columns.tolist()
+    n_colors = len(countries)
+    color_scale = pc.sample_colorscale("Rainbow", [i / (n_colors - 1) for i in range(n_colors)])
 
-# --- Create Stacked Bar with graph_objects ---
-fig = go.Figure()
+    fig = go.Figure()
+    for i, country in enumerate(countries):
+        fig.add_trace(go.Bar(
+            x=pivot.index,
+            y=pivot[country],
+            name=country,
+            marker=dict(color=color_scale[i]),
+            hovertemplate=f"{country}<br>GDP: %{{y:,.0f}} million USD<extra></extra>"
+        ))
 
-for i, country in enumerate(countries):
-    fig.add_trace(go.Bar(
-        x=pivot.index,
-        y=pivot[country],
-        name=country,
-        marker=dict(color=color_scale[i]),
-        hovertemplate=f"{country}<br>GDP: %{{y:,.0f}} million USD<extra></extra>"
-    ))
+    fig.update_layout(
+        barmode="stack",
+        title=f"GDP by Country (Stacked by Region) - {source}",
+        xaxis_title="Region",
+        yaxis_title="GDP (US$ million)",
+        legend_title="Country",
+        template="plotly_white",
+        height=700,
+        hovermode="x unified",
+    )
+    return fig
 
-fig.update_layout(
-    barmode="stack",
-    title=f"GDP by Country (Stacked by Region) - {source}",
-    xaxis_title="Region",
-    yaxis_title="GDP (US$ million)",
-    legend_title="Country",
-    template="plotly_white",
-    height=700,
-    hovermode="x unified",
-)
-
+# --- Prepare & Plot ---
+plot_df = prepare_plot_df(source)
+fig = build_stacked_bar(plot_df)
 st.plotly_chart(fig, use_container_width=True)
