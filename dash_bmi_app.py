@@ -80,6 +80,7 @@ def compute_bmi(height, height_unit, weight, weight_unit):
     bmi = weight_kg / (height_m ** 2)
     return bmi, None
 
+#extra function to determine BMI category
 def bmi_category(bmi):
     if bmi < 18.5:
         return "Underweight"
