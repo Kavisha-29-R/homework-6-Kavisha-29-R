@@ -3,46 +3,54 @@
 #   Again, post the python code for your app as well as a gif screen capture of it running.
 
 # streamlit_point_map.py
+
 import streamlit as st
+import pandas as pd
 import pydeck as pdk
 
-st.set_page_config(layout="wide", page_title="Latitude/Longitude Map")
+# --- App title ---
+st.title("🌍 Longitude & Latitude Map Viewer")
 
-st.title("Place an icon by Latitude / Longitude")
+st.write("Enter coordinates below to display a marker on the map:")
 
-col1, col2 = st.columns([1, 3])
-
+# --- Input fields ---
+col1, col2 = st.columns(2)
 with col1:
-    lat = st.number_input("Latitude", value=0.0, format="%.6f")
-    lon = st.number_input("Longitude", value=0.0, format="%.6f")
-    zoom = st.slider("Zoom level", 1, 18, 5)
-    icon_url = st.text_input("Icon image URL (optional)", value="https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg")
-    add_button = st.button("Show point on map")
-
+    latitude = st.number_input("Latitude", value=0.0, format="%.6f")
 with col2:
-    st.write("Map preview")
-    if add_button:
-        # create an icon layer using IconLayer
-        data = [{
-            "name": "selected",
-            "lat": lat,
-            "lon": lon,
-            "icon_url": icon_url,
-            "size": 10
-        }]
-        ICON_LAYER = pdk.Layer(
-            "IconLayer",
-            data,
-            get_icon="{'url': icon_url, 'width': 128, 'height': 128, 'anchorY': 128}",
-            get_size=4,
-            size_scale=15,
-            pickable=True,
-            get_position=["lon", "lat"]
-        )
-        view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=zoom, pitch=0)
-        deck = pdk.Deck(layers=[ICON_LAYER], initial_view_state=view_state, map_style='mapbox/light-v9')
-        st.pydeck_chart(deck)
-    else:
-        st.info("Enter coordinates and click 'Show point on map'")
+    longitude = st.number_input("Longitude", value=0.0, format="%.6f")
 
+# --- Create a small dataframe for the coordinates ---
+data = pd.DataFrame({"lat": [latitude], "lon": [longitude]})
 
+# --- Check that values are valid ---
+if latitude != 0.0 or longitude != 0.0:
+    st.success(f"📍 Marker placed at ({latitude}, {longitude})")
+
+    # --- Define the map view ---
+    view_state = pdk.ViewState(
+        latitude=latitude,
+        longitude=longitude,
+        zoom=8,
+        pitch=0,
+    )
+
+    # --- Define the layer (simple red dot marker) ---
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=data,
+        get_position='[lon, lat]',
+        get_color='[200, 30, 0, 160]',
+        get_radius=20000,
+    )
+
+    # --- Create and show the deck.gl map ---
+    map = pdk.Deck(
+        map_style="light",  # ✅ public map style (no API key)
+        initial_view_state=view_state,
+        layers=[layer],
+    )
+
+    st.pydeck_chart(map)
+else:
+    st.info("Please enter a latitude and longitude to display the map.")
