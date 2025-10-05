@@ -7,26 +7,68 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
-# --- App title ---
+# Set page config to wide mode
+st.set_page_config(
+    page_title="Longitude & Latitude Map Viewer",
+    layout="wide",  # <-- makes the app use full browser width
+    initial_sidebar_state="collapsed"
+)
+
 st.title("🌍 Longitude & Latitude Map Viewer")
 
 st.write("Enter coordinates below to display a marker on the map:")
 
+# --- Initialize session state ---
+if "latitude_input" not in st.session_state:
+    st.session_state.latitude_input = "00.0000"
+if "longitude_input" not in st.session_state:
+    st.session_state.longitude_input = "00.0000"
+
+# --- Clear buttons ---
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("Clear Latitude"):
+        st.session_state.latitude_input = ""
+with col2:
+    if st.button("Clear Longitude"):
+        st.session_state.longitude_input = ""
+
 # --- Input fields ---
 col1, col2 = st.columns(2)
 with col1:
-    latitude = st.number_input("Latitude", value=0.0, format="%.6f")
+    lat_text = st.text_input(
+        "Latitude",
+        value=st.session_state.latitude_input,
+        key="latitude_input_box",
+        placeholder="Enter latitude..."
+    )
 with col2:
-    longitude = st.number_input("Longitude", value=0.0, format="%.6f")
+    lon_text = st.text_input(
+        "Longitude",
+        value=st.session_state.longitude_input,
+        key="longitude_input_box",
+        placeholder="Enter longitude..."
+    )
 
-# --- Create a small dataframe for the coordinates ---
-data = pd.DataFrame({"lat": [latitude], "lon": [longitude]})
+# --- Save the current text back into session state ---
+st.session_state.latitude_input = lat_text
+st.session_state.longitude_input = lon_text
 
-# --- Check that values are valid ---
-if latitude != 0.0 or longitude != 0.0:
+# --- Validate inputs ---
+try:
+    latitude = float(lat_text)
+    longitude = float(lon_text)
+    valid = True
+except ValueError:
+    st.error("Please enter valid numeric values for latitude and longitude.")
+    valid = False
+
+# --- Show map if inputs are valid ---
+if valid:
+    data = pd.DataFrame({"lat": [latitude], "lon": [longitude]})
+
     st.success(f"📍 Marker placed at ({latitude}, {longitude})")
 
-    # --- Define the map view ---
     view_state = pdk.ViewState(
         latitude=latitude,
         longitude=longitude,
@@ -34,7 +76,6 @@ if latitude != 0.0 or longitude != 0.0:
         pitch=0,
     )
 
-    # --- Define the layer (simple red dot marker) ---
     layer = pdk.Layer(
         "ScatterplotLayer",
         data=data,
@@ -43,13 +84,10 @@ if latitude != 0.0 or longitude != 0.0:
         get_radius=20000,
     )
 
-    # --- Create and show the deck.gl map ---
-    map = pdk.Deck(
-        map_style="light",  # public map style (no API key)
+    map_chart = pdk.Deck(
+        map_style="light",
         initial_view_state=view_state,
         layers=[layer],
     )
 
-    st.pydeck_chart(map)
-else:
-    st.info("Please enter a latitude and longitude to display the map.")
+    st.pydeck_chart(map_chart)
