@@ -61,7 +61,7 @@ A **Streamlit app** that uses web-scraped GDP data (from IMF, UN, and World Bank
 
 ### Files
 - `gdp_app.py` — Python source code for the Streamlit app.  
-- `gdp_app.gif` — Short demo GIF showing the app’s interactivity.
+- `GDP_app.gif` — Short demo GIF showing the app’s interactivity.
 
 ---
 
