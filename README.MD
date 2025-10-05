@@ -9,7 +9,7 @@ Each project focuses on building interactive visual tools with real-world data i
 
 | App | Framework | Description | Files |
 |-----|------------|--------------|-------|
-| **1. BMI Calculator** | Dash | Calculates Body Mass Index (BMI) from user inputs in either metric or imperial units. | `bmi_app.py`, `bmi_app.gif` |
+| **1. BMI Calculator** | Dash | Calculates Body Mass Index (BMI) from user inputs in either metric or imperial units. | `dash_bmi_app.py`, `BMI_Calculator_app.gif` |
 | **2. Location Mapper** | Streamlit | Generates an interactive map from user-provided longitude and latitude values with a pinpoint marker. | `location_app.py`, `location_app.gif` |
 | **3. GDP Visualizer** | Streamlit | Displays stacked interactive bar plots of country GDPs by region using IMF, UN, or World Bank data sources. | `gdp_app.py`, `gdp_app.gif` |
 
