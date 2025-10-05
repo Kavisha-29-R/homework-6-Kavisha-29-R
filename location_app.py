@@ -2,7 +2,6 @@
 #   Create a streamlit app where a user enters longitude and latitude and it creates a map with with a little icon over the spot that you selected. 
 #   Again, post the python code for your app as well as a gif screen capture of it running.
 
-# streamlit_point_map.py
 
 import streamlit as st
 import pandas as pd
@@ -46,7 +45,7 @@ if latitude != 0.0 or longitude != 0.0:
 
     # --- Create and show the deck.gl map ---
     map = pdk.Deck(
-        map_style="light",  # ✅ public map style (no API key)
+        map_style="light",  # public map style (no API key)
         initial_view_state=view_state,
         layers=[layer],
     )
